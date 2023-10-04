@@ -1,10 +1,11 @@
-package uk.ed.ac.inf;
+package uk.ed.ac.info;
 
 import uk.ac.ed.inf.ilp.data.LngLat;
 import uk.ac.ed.inf.ilp.data.NamedRegion;
 import uk.ac.ed.inf.ilp.interfaces.LngLatHandling;
 
-import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.Point2D;
 
 public class LngLatHandler implements LngLatHandling {
     /**
@@ -43,55 +44,16 @@ public class LngLatHandler implements LngLatHandling {
      * @return: Whether `position` lies inside `region`
      */
     public boolean isInRegion(LngLat position, NamedRegion region) {
-        int numCrossings = 0;
+        Path2D polygon = new Path2D.Double();
+        polygon.moveTo(region.vertices()[0].lat(), region.vertices()[0].lng());
 
-        // This is the point directly north of `position` on the north edge of
-        // region's bounding rectangle
-        LngLat northern = new LngLat(northernBoundaryLng(region), position.lat());
-
-        // The line for checking intersections
-        Line2D intersectLine = new Line2D.Double(
-                position.lat(), northern.lat(),
-                position.lng(), northern.lat()
-        );
-        // Stores the current edge to be checked
-        Line2D vertexEdge;
-
-        // For each vertex in the list, create an edge pairing that vertex with the next one
-        for (int n = 0; n < region.vertices().length; n++) {
-            vertexEdge = new Line2D.Double(
-                    region.vertices()[n].lat(), region.vertices()[n+1].lat(),
-                    region.vertices()[n].lng(), region.vertices()[n+1].lng()
-            );
-
-            // If the intersectLine intersects the vertexEdge mark down an extra crossing
-            if (vertexEdge.intersectsLine(intersectLine)) {
-                numCrossings++;
-            }
+        for (LngLat vertex : region.vertices()) {
+            polygon.lineTo(vertex.lat(), vertex.lng());
         }
 
-        // If the number of crossings is odd, then the point lies in the region
-        return numCrossings % 2 == 1;
-    }
+        polygon.closePath();
 
-    /**
-     * Given a polygon `region`, determine the longitude of its northernmost point
-     *
-     * @param region: The polygon
-     * @return: The northernmost longitude
-     */
-    private double northernBoundaryLng(NamedRegion region) {
-        double max = 0;
-
-        // Iterate over the list of vertices to determine what the northernmost point is
-        for (LngLat pos : region.vertices()) {
-            if (pos.lng() > max) {
-                max = pos.lng();
-            }
-        }
-
-        return max;
-    }
+        return polygon.contains(new Point2D.Double(position.lat(), position.lng()));
 
     /**
      * Produces the next position when given a point and an angle
@@ -108,8 +70,11 @@ public class LngLatHandler implements LngLatHandling {
 
         // The differences in latitude and longitude between the start and end
         // Angles provided are in degrees, but Math.sin() and Math.cos() use radians
-        double dLng = 0.00015 * Math.sin(angle * Math.PI / 180);
-        double dLat = 0.00015 * Math.cos(angle * Math.PI / 180);
+        //
+        // Importantly, we are treating north as 0 degrees instead of east (as is assumed
+        // when working with radians) so must account for this
+        double dLng = 0.00015 * Math.sin((angle - 90) * Math.PI / 180);
+        double dLat = 0.00015 * Math.cos((angle - 90) * Math.PI / 180);
 
         return new LngLat(startPosition.lng() + dLng, startPosition.lat() + dLat);
     }
