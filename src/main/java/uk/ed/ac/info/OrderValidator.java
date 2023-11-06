@@ -21,10 +21,16 @@ public class OrderValidator implements OrderValidation {
      */
     private ArrayList<Restaurant> getOrderedRestauraunts(Order order, Restaurant[] definedRestaurants) {
         ArrayList<Restaurant> restaurantList = new ArrayList<>();
+        // For each of the restaurants,
         for (Restaurant restaurant : definedRestaurants) {
+            // check each pizza in the order
             for (Pizza pizza : order.getPizzasInOrder()) {
-                if (Arrays.asList(restaurant.menu()).contains(pizza)) {
-                    restaurantList.add(restaurant);
+                // against each pizza on the restaurant's menu,
+                for (Pizza restaurantPizza : restaurant.menu()) {
+                    // and record what *unique* restaurants have been ordered from
+                    if (pizza.equals(restaurantPizza) && !restaurantList.contains(restaurant)) {
+                        restaurantList.add(restaurant);
+                    }
                 }
             }
         }
@@ -38,15 +44,19 @@ public class OrderValidator implements OrderValidation {
      * @return: Whether the card is 16 digits long and passes Luhn's algorithm
      */
     private boolean cardNumberValid(String cardNo) {
+        if (cardNo == null) {return false;}
         return cardNo.matches("^[0-9]{16}$");
     }
 
+    
     /**
      * @param creditCardExpiry: The last valid month for the credit card
      * @param orderDate: The date of the order
      * @return: Whether the expiry date provided has a valid format and is before the end of the last valid month
      */
     private boolean cardExpiryValid(String creditCardExpiry, LocalDate orderDate) {
+        if (creditCardExpiry == null) {return false;}
+
         boolean validString = creditCardExpiry.matches("^(0[1-9]|1[0-2])/[0-9][0-9]$");
 
         if (!validString) return false;
@@ -67,6 +77,7 @@ public class OrderValidator implements OrderValidation {
      * @return: Whether the CVV is three digits long
      */
     private boolean cvvValid(String cvv) {
+        if (cvv == null) {return false;}
         return cvv.matches("^[0-9]{3}$");
     }
 
@@ -148,7 +159,7 @@ public class OrderValidator implements OrderValidation {
         }
 
         // Is there fewer than four pizzas
-        else if (!(orderToValidate.getPizzasInOrder().length <= 4)) {
+        else if (orderToValidate.getPizzasInOrder().length > SystemConstants.MAX_PIZZAS_PER_ORDER) {
             orderToValidate.setOrderValidationCode(OrderValidationCode.MAX_PIZZA_COUNT_EXCEEDED);
         }
 
@@ -158,7 +169,7 @@ public class OrderValidator implements OrderValidation {
         }
 
         // Are the pizzas all from the same restaurant
-        else if (orderedFrom.size() != 1) {
+        else if (orderedFrom.size() > 1) {
             orderToValidate.setOrderValidationCode(OrderValidationCode.PIZZA_FROM_MULTIPLE_RESTAURANTS);
         }
 

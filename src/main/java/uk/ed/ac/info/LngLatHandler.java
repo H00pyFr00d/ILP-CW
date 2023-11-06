@@ -3,6 +3,7 @@ package uk.ed.ac.info;
 import uk.ac.ed.inf.ilp.data.LngLat;
 import uk.ac.ed.inf.ilp.data.NamedRegion;
 import uk.ac.ed.inf.ilp.interfaces.LngLatHandling;
+import uk.ac.ed.inf.ilp.constant.*;
 
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
@@ -27,7 +28,7 @@ public class LngLatHandler implements LngLatHandling {
      * @return: Whether the two points are "close"
      */
     public boolean isCloseTo(LngLat startPosition, LngLat otherPosition) {
-        return distanceTo(startPosition, otherPosition) < 0.00015;
+        return distanceTo(startPosition, otherPosition) < SystemConstants.DRONE_IS_CLOSE_DISTANCE;
     }
 
     /**
@@ -54,6 +55,7 @@ public class LngLatHandler implements LngLatHandling {
         polygon.closePath();
 
         return polygon.contains(new Point2D.Double(position.lat(), position.lng()));
+    }
 
     /**
      * Produces the next position when given a point and an angle
@@ -70,11 +72,8 @@ public class LngLatHandler implements LngLatHandling {
 
         // The differences in latitude and longitude between the start and end
         // Angles provided are in degrees, but Math.sin() and Math.cos() use radians
-        //
-        // Importantly, we are treating north as 0 degrees instead of east (as is assumed
-        // when working with radians) so must account for this
-        double dLng = 0.00015 * Math.sin((angle - 90) * Math.PI / 180);
-        double dLat = 0.00015 * Math.cos((angle - 90) * Math.PI / 180);
+        double dLng = SystemConstants.DRONE_MOVE_DISTANCE * Math.cos(angle * Math.PI/180);
+        double dLat = SystemConstants.DRONE_MOVE_DISTANCE * Math.sin(angle * Math.PI/180);
 
         return new LngLat(startPosition.lng() + dLng, startPosition.lat() + dLat);
     }
